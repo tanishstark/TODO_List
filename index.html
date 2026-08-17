@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenTask — Modern Productivity & Task Manager</title>
+  <meta name="description" content="A sleek, high-aesthetic task manager with Light & Dark mode, category tagging, priority tracking, and PIN lock security.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/></svg>">
+</head>
+<body>
+  <!-- PIN Lock Screen Overlay -->
+  <div id="pinLockOverlay" class="pin-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pinLockTitle">
+    <div class="pin-card">
+      <div class="pin-icon-wrap">
+        <svg class="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h2 id="pinLockTitle" class="pin-title">ZenTask Locked</h2>
+      <p class="pin-subtitle" id="pinSubtitle">Enter your 4-digit PIN to access your tasks</p>
+      
+      <div class="pin-dots" id="pinDots" aria-label="PIN entry indicator">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+
+      <div class="pin-keypad" id="pinKeypad">
+        <button type="button" class="key-btn" data-key="1">1</button>
+        <button type="button" class="key-btn" data-key="2">2</button>
+        <button type="button" class="key-btn" data-key="3">3</button>
+        <button type="button" class="key-btn" data-key="4">4</button>
+        <button type="button" class="key-btn" data-key="5">5</button>
+        <button type="button" class="key-btn" data-key="6">6</button>
+        <button type="button" class="key-btn" data-key="7">7</button>
+        <button type="button" class="key-btn" data-key="8">8</button>
+        <button type="button" class="key-btn" data-key="9">9</button>
+        <button type="button" class="key-btn action-key" data-action="clear" aria-label="Clear PIN">C</button>
+        <button type="button" class="key-btn" data-key="0">0</button>
+        <button type="button" class="key-btn action-key" data-action="backspace" aria-label="Delete last digit">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="pin-error-msg" id="pinErrorMsg"></div>
+    </div>
+  </div>
+
+  <!-- Main Application Container -->
+  <div class="app-layout" id="appLayout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-badge">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="app-title">ZenTask</h1>
+          <span class="app-tagline">Focus &amp; Flow</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Add Task Quick Button -->
+        <button type="button" id="openAddModalBtn" class="btn btn-primary" aria-label="Create new task">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Task</span>
+        </button>
+
+        <!-- Security / Lock Button -->
+        <button type="button" id="lockAppBtn" class="btn-icon" title="Lock App (Ctrl+L)" aria-label="Lock App">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </button>
+
+        <!-- Settings Button -->
+        <button type="button" id="openSettingsBtn" class="btn-icon" title="Settings &amp; Security" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <span class="toggle-track">
+            <span class="toggle-thumb">
+              <!-- Sun Icon -->
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <!-- Moon Icon -->
+              <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- Productivity Metrics Dashboard -->
+      <section class="stats-grid" aria-label="Task Analytics">
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-value" id="statTotal">0</span>
+            <span class="stat-label">Total Tasks</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-value" id="statPending">0</span>
+            <span class="stat-label">In Progress</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-emerald">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-value" id="statCompleted">0</span>
+            <span class="stat-label">Completed</span>
+          </div>
+        </div>
+
+        <div class="stat-card stat-progress-card">
+          <div class="progress-info">
+            <span class="stat-label">Completion Rate</span>
+            <span class="stat-percent" id="statPercent">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Category Filter Pills & Manager -->
+      <section class="categories-bar" aria-label="Task Categories">
+        <div class="categories-scroll" id="categoriesPillContainer">
+          <!-- Populated by JS -->
+        </div>
+        <button type="button" id="openManageCategoriesBtn" class="btn-manage-cat" title="Manage Categories" aria-label="Add or manage categories">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Category</span>
+        </button>
+      </section>
+
+      <!-- Search & Filters Toolbar -->
+      <section class="toolbar-section" aria-label="Search and Filter Controls">
+        <div class="search-input-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="search" id="searchInput" class="search-input" placeholder="Search tasks, notes, or tags..." autocomplete="off">
+          <button type="button" id="clearSearchBtn" class="btn-clear-search hidden" aria-label="Clear search">&times;</button>
+        </div>
+
+        <div class="filter-controls">
+          <!-- Status Tabs -->
+          <div class="status-tab-group" role="tablist" aria-label="Status Filters">
+            <button type="button" class="tab-btn active" data-status="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="tab-btn" data-status="active" role="tab" aria-selected="false">Active</button>
+            <button type="button" class="tab-btn" data-status="completed" role="tab" aria-selected="false">Completed</button>
+            <button type="button" class="tab-btn" data-status="starred" role="tab" aria-selected="false">★ Starred</button>
+          </div>
+
+          <!-- Priority Filter -->
+          <select id="priorityFilterSelect" class="custom-select" aria-label="Filter by priority">
+            <option value="all">All Priorities</option>
+            <option value="high">🔴 High Priority</option>
+            <option value="medium">🟡 Medium Priority</option>
+            <option value="low">🟢 Low Priority</option>
+          </select>
+
+          <!-- Sort Select -->
+          <select id="sortBySelect" class="custom-select" aria-label="Sort tasks">
+            <option value="created-desc">📅 Newest First</option>
+            <option value="due-asc">⏰ Due Date (Earliest)</option>
+            <option value="priority-desc">🔥 Priority (High to Low)</option>
+            <option value="alpha-asc">🔤 Alphabetical (A-Z)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Task List Container -->
+      <section class="task-list-section" aria-label="Tasks List">
+        <div id="taskListContainer" class="task-list">
+          <!-- Tasks will be rendered dynamically here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-illustration">
+            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </div>
+          <h3 class="empty-title">All tasks cleared!</h3>
+          <p class="empty-desc">You're completely on track. Create a new task to keep the momentum going.</p>
+          <button type="button" id="emptyAddBtn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Create First Task</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <span>ZenTask • Zero-Latency Local Productivity</span>
+        <div class="footer-links">
+          <button type="button" id="exportDataBtn" class="footer-link-btn" title="Export all tasks to JSON">Export Data</button>
+          <span class="bullet">•</span>
+          <button type="button" id="importDataBtn" class="footer-link-btn" title="Import tasks from JSON">Import Data</button>
+          <input type="file" id="importFileInput" accept=".json" class="hidden">
+          <span class="bullet">•</span>
+          <button type="button" id="clearCompletedBtn" class="footer-link-btn" title="Remove all completed tasks">Clear Completed</button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Native Modal Dialog: Create / Edit Task -->
+  <dialog id="taskModal" class="app-modal" closedby="any" aria-labelledby="taskModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="taskModalTitle" class="modal-title">New Task</h2>
+        <button type="button" class="btn-close-modal" id="closeTaskModalBtn" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <form id="taskForm" class="modal-form">
+        <input type="hidden" id="taskIdInput">
+
+        <div class="form-group">
+          <label for="taskTitleInput" class="form-label">Task Title <span class="required">*</span></label>
+          <input type="text" id="taskTitleInput" class="form-input" placeholder="What needs to be accomplished?" required maxlength="120">
+        </div>
+
+        <div class="form-group">
+          <label for="taskDescInput" class="form-label">Notes &amp; Details</label>
+          <textarea id="taskDescInput" class="form-textarea" rows="3" placeholder="Add extra context, links, or instructions..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label for="taskCategorySelect" class="form-label">Category</label>
+            <select id="taskCategorySelect" class="form-select"></select>
+          </div>
+
+          <div class="form-group col-half">
+            <label for="taskPrioritySelect" class="form-label">Priority</label>
+            <select id="taskPrioritySelect" class="form-select">
+              <option value="high">🔴 High Priority</option>
+              <option value="medium" selected>🟡 Medium Priority</option>
+              <option value="low">🟢 Low Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDueDateInput" class="form-label">Due Date &amp; Time</label>
+          <input type="datetime-local" id="taskDueDateInput" class="form-input">
+        </div>
+
+        <!-- Subtasks Checklist Section -->
+        <div class="form-group">
+          <label class="form-label">Subtasks &amp; Checklist</label>
+          <div class="subtask-input-row">
+            <input type="text" id="subtaskItemInput" class="form-input" placeholder="Add a subtask step..." maxlength="100">
+            <button type="button" id="addSubtaskBtn" class="btn btn-secondary">Add</button>
+          </div>
+          <ul id="subtaskListPreview" class="subtask-preview-list"></ul>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancelTaskModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveTaskBtn">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Native Modal Dialog: Manage Categories -->
+  <dialog id="categoryModal" class="app-modal" closedby="any" aria-labelledby="categoryModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="categoryModalTitle" class="modal-title">Manage Categories</h2>
+        <button type="button" class="btn-close-modal" id="closeCategoryModalBtn" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <div class="category-modal-body">
+        <form id="newCategoryForm" class="new-cat-form">
+          <div class="form-row">
+            <input type="text" id="newCatNameInput" class="form-input" placeholder="Category Name (e.g. Design, Personal)" required maxlength="25">
+            <input type="color" id="newCatColorInput" class="color-picker-input" value="#6366f1" title="Choose badge color">
+            <button type="submit" class="btn btn-primary">Create</button>
+          </div>
+        </form>
+
+        <h4 class="cat-list-heading">Existing Categories</h4>
+        <div id="categoryListContainer" class="custom-cat-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Native Modal Dialog: Settings & Security -->
+  <dialog id="settingsModal" class="app-modal" closedby="any" aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="settingsModalTitle" class="modal-title">Settings &amp; Security</h2>
+        <button type="button" class="btn-close-modal" id="closeSettingsModalBtn" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <div class="settings-modal-body">
+        <!-- PIN Security Section -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <div class="setting-title-wrap">
+              <h4 class="setting-name">PIN Passcode Protection</h4>
+              <p class="setting-desc">Protect your tasks with a secure 4-digit PIN lock screen.</p>
+            </div>
+            <span id="pinStatusBadge" class="status-badge badge-disabled">Disabled</span>
+          </div>
+
+          <div class="pin-management-actions" id="pinSetupSection">
+            <div class="form-group">
+              <label for="newPinInput" class="form-label">Set 4-Digit PIN</label>
+              <div class="pin-input-group">
+                <input type="password" id="newPinInput" class="form-input" placeholder="••••" maxlength="4" pattern="\d{4}" inputmode="numeric">
+                <button type="button" id="savePinBtn" class="btn btn-secondary">Enable PIN</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pin-management-actions hidden" id="pinActiveSection">
+            <div class="form-group">
+              <label for="currentPinInput" class="form-label">Verify Current PIN to Disable or Change</label>
+              <div class="pin-input-group">
+                <input type="password" id="currentPinInput" class="form-input" placeholder="••••" maxlength="4" pattern="\d{4}" inputmode="numeric">
+                <button type="button" id="removePinBtn" class="btn btn-danger">Disable PIN</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sound and Effects -->
+        <div class="settings-card">
+          <div class="setting-row">
+            <div>
+              <h4 class="setting-name">Completion Sound &amp; Celebration</h4>
+              <p class="setting-desc">Play a subtle chime and celebrate with micro-confetti when finishing tasks.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="soundToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Helper -->
+        <div class="settings-card">
+          <h4 class="setting-name">Keyboard Shortcuts</h4>
+          <ul class="shortcuts-list">
+            <li><kbd>N</kbd> <span>Create new task</span></li>
+            <li><kbd>/</kbd> <span>Focus search input</span></li>
+            <li><kbd>Ctrl</kbd> + <kbd>L</kbd> <span>Lock app immediately</span></li>
+            <li><kbd>Esc</kbd> <span>Close active modal</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
